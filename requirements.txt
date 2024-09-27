@@ -1,0 +1,14 @@
+librosa
+numpy
+opencv-contrib-python
+opencv-python
+tqdm
+numba
+basicsr
+facexlib
+gfpgan
+Pillow
+gradio
+pydub
+ffmpeg
+moviepy
