@@ -10,5 +10,5 @@ gfpgan
 Pillow
 gradio
 pydub
-ffmpeg
+ffmpeg-python
 moviepy
