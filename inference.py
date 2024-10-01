@@ -26,8 +26,8 @@ class Wav2LipCall:
 		self.static = False
 		self.fps = 25
 		self.pads = [0, 10, 0, 0]
-		self.face_det_batch_size = 8
-		self.wav2lip_batch_size = 32
+		self.face_det_batch_size = 32
+		self.wav2lip_batch_size = 128
 		self.resize_factor = 1
 		self.crop = [0, -1, 0, -1]
 		self.box = [-1, -1, -1, -1]
