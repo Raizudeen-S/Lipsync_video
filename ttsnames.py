@@ -1,14 +1,80 @@
 import gradio as gr
-from tts import male_voice,female_voice,TTS_run
+from tts import male_voice, female_voice, TTS_run
+from pydub import AudioSegment
+import io
+import gradio as gr
+import inference as lip
+import inference_realesrgan_video as realesrgan
+from moviepy.editor import VideoFileClip
+import subprocess, platform
+
 
 male_images = ["inputs/faces/thumbnils/men1.png", "inputs/faces/thumbnils/men2.png", "inputs/faces/thumbnils/men3.png"]
+
 female_images = ["inputs/faces/thumbnils/women1.png", "inputs/faces/thumbnils/women2.png", "inputs/faces/thumbnils/women3.png"]
+
+outfile = "result"
+wav2lip_video = "inputs/wav2lip_out/output.mp4"
+audio_file_path = "inputs/input_audio/ai.wav"
+
 
 def update_previews(gender):
     if gender == "Male":
-        return male_images, gr.update(choices=male_voice,visible=True)
+        return male_images, gr.update(choices=male_voice, visible=True)
     elif gender == "Female":
-        return female_images, gr.update(choices=female_voice,visible=True)
+        return female_images, gr.update(choices=female_voice, visible=True)
+
+
+def select_image(selection: gr.SelectData):
+    # Function to handle the selected image
+    return selection.value["image"]["orig_name"]
+
+
+def preview_video_process(video_input, selected_image, video_gen_location):
+    preview_video = "inputs/faces/" + selected_image.split(".")[0] + ".mp4"
+
+    command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+    [0:v][scaled]overlay=W-w--100:H-h" -c:a copy result/final_result.mp4 -y""".format(
+    video_input,preview_video)
+    
+    subprocess.call(command, shell=platform.system() != "Windows")
+
+    return preview_video
+
+
+def process_video(video, voice):
+
+    try:
+        videopath = "inputs/faces/{}.mp4".format(voice)
+
+        lip_sync_obj = lip.Wav2LipCall(face=videopath, audio=audio_file_path, outfile=outfile)
+        lip_sync_obj.main()
+
+        del lip_sync_obj
+
+        # Enhance video using Real-ESRGAN
+        enhance_video = realesrgan.RealEsrganUpscale(input=wav2lip_video, output=outfile)
+        enhance_video.main()
+
+        command = """ffmpeg -i {} -i result/result_out.mp4 -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+            [0:v][scaled]overlay=W-w--100:H-h" -c:a copy result/final_result.mp4 -y""".format(
+            video
+        )
+
+        subprocess.call(command, shell=platform.system() != "Windows")
+
+        return "result/final_result.mp4"
+
+    finally:
+        if enhance_video:
+            del enhance_video
+        print("Generated Successfully")
+
+
+def sample_test(video_input, audio_output, video_gen_location, image_gallery):
+    print(video_input, audio_output, video_gen_location, image_gallery, sep="\n")
+    return "result/final_result.mp4"
+
 
 def create_interface():
     with gr.Blocks() as demo:
@@ -18,27 +84,55 @@ def create_interface():
             with gr.Column():
                 video_input = gr.Video()
                 text_input = gr.Textbox(label="Input Text")
+
                 with gr.Row():
                     gender_input = gr.Dropdown(choices=["Male", "Female"], label="Gender", interactive=True)
                     voice_dropdown = gr.Dropdown(label="Voice", interactive=True)
                 # Set up dependency between gender and voice dropdown
                 with gr.Row():
-                    image_gallery = gr.Gallery(label="Image Previews", interactive=True,columns=3)
-                    gender_input.change(fn=update_previews, inputs=gender_input, outputs=[image_gallery,voice_dropdown])
+                    image_gallery = gr.Gallery(
+                        label="Image Previews",
+                        interactive=True,
+                        columns=3,
+                        show_download_button=False,
+                        show_share_button=False,
+                    )
 
-                video_gen_location = gr.Radio(label="Video Generation Location", choices=["Top Rigth","Top Left","Bottom Right", "Bottom Left"], value="Top Right",interactive=True)
+                    gender_input.change(
+                        fn=update_previews,
+                        inputs=gender_input,
+                        outputs=[image_gallery, voice_dropdown],
+                    )
+
+                    selected_image = gr.State()
+
+                    image_gallery.select(fn=select_image, inputs=None, outputs=selected_image)
+
+                video_gen_location = gr.Radio(
+                    label="Video Generation Location",
+                    choices=["Top Right", "Top Left", "Bottom Right", "Bottom Left"],
+                    value="Top Right",
+                    interactive=True,
+                )
 
             with gr.Column():
 
                 # Interface for TTS
-                output = gr.Audio()
+                audio_output = gr.Audio()
+                preview_output = gr.Video()
                 video_output = gr.Video()
                 submit_button = gr.Button("Generate Video")
 
-                voice_dropdown.change(TTS_run, inputs=[text_input, voice_dropdown], outputs=output)
-                submit_button.click(TTS_run, inputs=[text_input, voice_dropdown], outputs=output)
+                voice_dropdown.change(TTS_run, inputs=[text_input, voice_dropdown], outputs=audio_output)
+                video_gen_location.change(preview_video_process, inputs=[video_input, selected_image, video_gen_location], outputs=preview_output)
+                submit_button.click(
+                    sample_test,
+                    inputs=[video_input, audio_output, video_gen_location, selected_image],
+                    outputs=video_output,
+                )
 
     # Launch the interface
     demo.launch(debug=True)
+
 
 create_interface()

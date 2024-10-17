@@ -55,6 +55,7 @@ def process_video(video, text):
             del enhance_video
         print("Generated Successfully")
 
+
 infer = gr.Interface(
     fn=process_video,
     inputs=["video", gr.Radio(["Male", "Female"], label="Character")],
