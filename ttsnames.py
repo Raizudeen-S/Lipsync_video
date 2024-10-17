@@ -8,11 +8,8 @@ import inference_realesrgan_video as realesrgan
 from moviepy.editor import VideoFileClip
 import subprocess, platform
 
-
 male_images = ["inputs/faces/thumbnils/men1.png", "inputs/faces/thumbnils/men2.png", "inputs/faces/thumbnils/men3.png"]
-
 female_images = ["inputs/faces/thumbnils/women1.png", "inputs/faces/thumbnils/women2.png", "inputs/faces/thumbnils/women3.png"]
-
 outfile = "result"
 wav2lip_video = "inputs/wav2lip_out/output.mp4"
 audio_file_path = "inputs/input_audio/ai.wav"
@@ -32,18 +29,48 @@ def select_image(selection: gr.SelectData):
 
 def preview_video_process(video_input, selected_image, video_gen_location):
     preview_video = "inputs/faces/" + selected_image.split(".")[0] + ".mp4"
+    preview_output = "temp/preview.mp4"
 
-    command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-    [0:v][scaled]overlay=W-w--100:H-h" -c:a copy result/final_result.mp4 -y""".format(
-    video_input,preview_video)
-    
+    if video_gen_location == "Bottom Right":
+        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [0:v][scaled]overlay=W-w--100:H-h" -c:a copy -t 10 {} -y""".format(
+            video_input, preview_video, preview_output
+        )
+    elif video_gen_location == "Bottom Left":
+        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [0:v][scaled]overlay=-100:H-h" -c:a copy -t 10 {} -y""".format(
+            video_input, preview_video, preview_output
+        )
+    elif video_gen_location == "Top Right":
+        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [0:v][scaled]overlay=W-w--100:0" -c:a copy -t 10 {} -y""".format(
+            video_input, preview_video, preview_output
+        )
+    elif video_gen_location == "Top Left":
+        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [0:v][scaled]overlay=-100:0" -c:a copy -t 10 {} -y""".format(
+            video_input, preview_video, preview_output
+        )
+    elif video_gen_location == "Right":
+        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; 
+        [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W/2:H-h" -c:a copy -t 10 {} -y""".format(
+            video_input, preview_video, preview_output
+        )
+    elif video_gen_location == "Left":
+        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; 
+        [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=-W/5:H-h" -c:a copy -t 10 {} -y""".format(
+            video_input, preview_video, preview_output
+        )
+
+    else:
+        return 0
+
     subprocess.call(command, shell=platform.system() != "Windows")
 
-    return preview_video
+    return preview_output
 
 
-def process_video(video, voice):
-
+def process_video(video_input, audio_output, video_gen_location, image_gallery):
     try:
         videopath = "inputs/faces/{}.mp4".format(voice)
 
@@ -51,7 +78,6 @@ def process_video(video, voice):
         lip_sync_obj.main()
 
         del lip_sync_obj
-
         # Enhance video using Real-ESRGAN
         enhance_video = realesrgan.RealEsrganUpscale(input=wav2lip_video, output=outfile)
         enhance_video.main()
@@ -62,7 +88,6 @@ def process_video(video, voice):
         )
 
         subprocess.call(command, shell=platform.system() != "Windows")
-
         return "result/final_result.mp4"
 
     finally:
@@ -110,8 +135,7 @@ def create_interface():
 
                 video_gen_location = gr.Radio(
                     label="Video Generation Location",
-                    choices=["Top Right", "Top Left", "Bottom Right", "Bottom Left"],
-                    value="Top Right",
+                    choices=["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Right", "Left"],
                     interactive=True,
                 )
 

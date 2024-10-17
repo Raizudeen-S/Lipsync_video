@@ -206,7 +206,7 @@ class Wav2LipCall:
 
 		wav = audio.load_wav(self.audio, 16000)
 		mel = audio.melspectrogram(wav)
-		print(mel.shape)
+		# print(mel.shape)
 
 		if np.isnan(mel.reshape(-1)).sum() > 0:
 			raise ValueError('Mel contains nan! Using a TTS voice? Add a small epsilon noise to the wav file and try again')
