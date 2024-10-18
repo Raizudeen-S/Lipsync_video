@@ -1,10 +1,9 @@
 import gradio as gr
-from tts import male_voice, female_voice, TTS_run
-from pydub import AudioSegment
+from tts import male_voice, female_voice
 import inference as lip
-import inference_realesrgan_video as realesrgan
-from moviepy.editor import VideoFileClip
+import inference_upscale as realesrgan
 import subprocess, platform
+import edge_tts
 
 male_images = ["inputs/faces/thumbnils/men1.png", "inputs/faces/thumbnils/men2.png", "inputs/faces/thumbnils/men3.png"]
 female_images = ["inputs/faces/thumbnils/women1.png", "inputs/faces/thumbnils/women2.png", "inputs/faces/thumbnils/women3.png"]
@@ -15,6 +14,14 @@ audio_file_path = "inputs/input_audio/ai.wav"
 enchance_video_ouput = "result/result_out.mp4"
 final_output = "result/final_result.mp4"
 
+enhance_video = realesrgan.RealEsrganUpscale()
+
+def tts(input_text, voice):
+    # Function to handle the TTS
+    com = edge_tts.Communicate(input_text, voice)
+    com.save_sync(audio_file_path)
+    return audio_file_path
+
 
 def update_previews(gender):
     if gender == "Male":
@@ -22,11 +29,9 @@ def update_previews(gender):
     elif gender == "Female":
         return female_images, gr.update(choices=female_voice, visible=True)
 
-
 def select_image(selection: gr.SelectData):
     # Function to handle the selected image
     return selection.value["image"]["orig_name"]
-
 
 def preview_video_process(video_input, selected_image, video_gen_location):
     preview_video = "inputs/faces/" + selected_image.split(".")[0] + ".mp4"
@@ -70,7 +75,6 @@ def preview_video_process(video_input, selected_image, video_gen_location):
 
     return preview_output
 
-
 def process_video(video_input, audio_output, video_gen_location, selected_image):
     try:
         preview_video = "inputs/faces/" + selected_image.split(".")[0] + ".mp4"
@@ -80,38 +84,37 @@ def process_video(video_input, audio_output, video_gen_location, selected_image)
 
         del lip_sync_obj
         # Enhance video using Real-ESRGAN
-        enhance_video = realesrgan.RealEsrganUpscale(input=wav2lip_video, output=outfile)
-        enhance_video.main()
+        enhance_video.main(inputs=wav2lip_video, output=outfile)
 
         if video_gen_location == "Bottom Right":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-            [0:v][scaled]overlay=W-w--100:H-h" -c:a copy -t 10 {} -y""".format(
-                video_input, enhance_video, final_output
+            [0:v][scaled]overlay=W-w--100:H-h" -map 1:a -c:a copy {} -y""".format(
+                video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Bottom Left":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-            [0:v][scaled]overlay=-100:H-h" -c:a copy -t 10 {} -y""".format(
-                video_input, enhance_video, final_output
+            [0:v][scaled]overlay=-100:H-h" -map 1:a -c:a copy {} -y""".format(
+                video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Top Right":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-            [0:v][scaled]overlay=W-w--100:0" -c:a copy -t 10 {} -y""".format(
-                video_input, enhance_video, final_output
+            [0:v][scaled]overlay=W-w--100:0" -map 1:a -c:a copy {} -y""".format(
+                video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Top Left":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-            [0:v][scaled]overlay=-100:0" -c:a copy -t 10 {} -y""".format(
-                video_input, enhance_video, final_output
+            [0:v][scaled]overlay=-100:0" -map 1:a -c:a copy {} -y""".format(
+                video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Right":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; 
-            [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W/2:H-h" -c:a copy -t 10 {} -y""".format(
-                video_input, enhance_video, final_output
+            [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W/2:H-h" -map 1:a -c:a copy {} -y""".format(
+                video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Left":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; 
-            [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=-W/5:H-h" -c:a copy -t 10 {} -y""".format(
-                video_input, enhance_video, final_output
+            [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=-W/5:H-h" -map 1:a -c:a copy {} -y""".format(
+                video_input, enchance_video_ouput, final_output
             )
         else:
             return 0
@@ -124,7 +127,6 @@ def process_video(video_input, audio_output, video_gen_location, selected_image)
             del enhance_video
         print("Generated Successfully")
 
-
 def create_interface():
     with gr.Blocks() as demo:
         gr.Markdown("Lip Sync")
@@ -135,7 +137,7 @@ def create_interface():
                 text_input = gr.Textbox(label="Input Text")
 
                 with gr.Row():
-                    gender_input = gr.Dropdown(choices=["Male", "Female"], label="Gender", interactive=True)
+                    gender_input = gr.Dropdown(choices=["Male", "Female"], label="Gender", interactive=True, value=None)
                     voice_dropdown = gr.Dropdown(label="Voice", interactive=True)
                 # Set up dependency between gender and voice dropdown
                 with gr.Row():
@@ -171,7 +173,7 @@ def create_interface():
                 video_output = gr.Video()
                 submit_button = gr.Button("Generate Video")
 
-                voice_dropdown.change(TTS_run, inputs=[text_input, voice_dropdown], outputs=audio_output)
+                voice_dropdown.change(tts, inputs=[text_input, voice_dropdown], outputs=audio_output)
                 video_gen_location.change(preview_video_process, inputs=[video_input, selected_image, video_gen_location], outputs=preview_output)
                 submit_button.click(
                     process_video,
@@ -181,6 +183,5 @@ def create_interface():
 
     # Launch the interface
     demo.launch(debug=True)
-
 
 create_interface()

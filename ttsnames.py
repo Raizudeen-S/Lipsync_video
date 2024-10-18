@@ -24,7 +24,7 @@ def generateAudio(video):
 def sample_test(video_input, audio_output, video_gen_location, image_gallery):
     print(video_input, audio_output, video_gen_location, image_gallery, sep="\n")
     return "result/final_result.mp4"
-
+    
 
 def process_video(video, text):
 

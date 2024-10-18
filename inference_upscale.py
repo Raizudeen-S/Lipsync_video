@@ -325,9 +325,9 @@ def run(args):
 
 
 class RealEsrganUpscale():
-    def __init__(self, inputs, output):
-        self.input = inputs
-        self.output = output
+    def __init__(self):
+        self.input = ""
+        self.output = ""
         self.model_name = "RealESRGAN_x2plus"
         self.denoise_strength = 0.5
         self.outscale = 2
@@ -343,11 +343,13 @@ class RealEsrganUpscale():
         self.num_process_per_gpu = 1
         self.alpha_upsampler = 'realesrgan'
         self.ext = 'auto'
-    def main(self):
+    def main(self, inputs, output):
         """Inference demo for Real-ESRGAN.
         It mainly for restoring anime videos.
 
         """
+        self.input = inputs
+        self.output = output
         os.makedirs(self.output, exist_ok=True)
 
         if mimetypes.guess_type(self.input)[0] is not None and mimetypes.guess_type(self.input)[0].startswith('video'):
