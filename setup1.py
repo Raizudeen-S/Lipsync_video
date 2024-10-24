@@ -8,5 +8,3 @@ patched_module.rgb_to_grayscale = F.rgb_to_grayscale
  
 # Replace the missing import in sys.modules
 sys.modules['torchvision.transforms.functional_tensor'] = patched_module
- 
-# Now run your code as usual, the patch is applied globally

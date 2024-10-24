@@ -12,3 +12,4 @@ gradio
 pydub
 ffmpeg-python
 moviepy
+edge_tts
