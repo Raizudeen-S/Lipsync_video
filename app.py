@@ -1,4 +1,7 @@
 import gradio as gr
+import setup1
+from multiprocessing import Process
+from temporary import main
 from tts import male_voice, female_voice
 import inference as lip
 import inference_upscale as realesrgan
@@ -84,7 +87,8 @@ def process_video(video_input, audio_output, video_gen_location, selected_image)
 
         del lip_sync_obj
         # Enhance video using Real-ESRGAN
-        enhance_video.main(inputs=wav2lip_video, output=outfile)
+
+        main()
 
         if video_gen_location == "Bottom Right":
             command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
@@ -107,8 +111,7 @@ def process_video(video_input, audio_output, video_gen_location, selected_image)
                 video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Right":
-            command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; 
-            [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W/2:H-h" -map 1:a -c:a copy {} -y""".format(
+            command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W-w/1.4:H-h" -map 1:a -c:a copy {} -y""".format(
                 video_input, enchance_video_ouput, final_output
             )
         elif video_gen_location == "Left":
@@ -182,6 +185,8 @@ def create_interface():
                 )
 
     # Launch the interface
-    demo.launch(debug=True)
+    demo.launch(debug=True,server_name="0.0.0.0")
 
-create_interface()
+
+if __name__ == '__main__':
+    create_interface()

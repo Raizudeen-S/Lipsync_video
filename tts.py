@@ -1,10 +1,7 @@
 import requests
 from pydub import AudioSegment
 import io
-from dotenv import dotenv_values
 
-config = dotenv_values(".env")
-url = config["URL"]
 
 audio_file_path = "inputs/input_audio/ai.wav"
 male_voice = ['en-AU-WilliamNeural', 'en-CA-LiamNeural', 'en-HK-SamNeural', 'en-IN-PrabhatNeural', 'en-IE-ConnorNeural', 'en-KE-ChilembaNeural', 'en-NZ-MitchellNeural', 'en-NG-AbeoNeural', 'en-PH-JamesNeural', 'en-SG-WayneNeural', 'en-ZA-LukeNeural', 'en-TZ-ElimuNeural', 'en-GB-RyanNeural', 'en-GB-ThomasNeural', 'en-US-AndrewMultilingualNeural', 'en-US-BrianMultilingualNeural', 'en-US-AndrewNeural', 'en-US-BrianNeural', 'en-US-ChristopherNeural', 'en-US-EricNeural', 'en-US-GuyNeural', 'en-US-RogerNeural', 'en-US-SteffanNeural']

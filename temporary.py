@@ -278,8 +278,7 @@ def inference_video(args, video_save_path, device=None, total_workers=1, worker_
 
 
 def run(args):
-    # args.video_name = osp.splitext(os.path.basename(args.input))[0]
-    args.video_name = "result"
+    args.video_name = osp.splitext(os.path.basename(args.input))[0]
     video_save_path = osp.join(args.output, f'{args.video_name}_{args.suffix}.mp4')
 
     if args.extract_frame_first:
@@ -325,56 +324,79 @@ def run(args):
     os.remove(f'{args.output}/{args.video_name}_vidlist.txt')
 
 
-class RealEsrganUpscale():
-    def __init__(self):
-        self.input = ""
-        self.output = ""
-        self.model_name = "RealESRGAN_x2plus"
-        self.denoise_strength = 0.5
-        self.outscale = 2
-        self.suffix = 'out'
-        self.tile = 0
-        self.tile_pad = 10
-        self.pre_pad = 0
-        self.face_enhance = True
-        self.fp32 = False
-        self.fps = None
-        self.ffmpeg_bin = 'ffmpeg'
-        self.extract_frame_first = False
-        self.num_process_per_gpu = 1
-        self.alpha_upsampler = 'realesrgan'
-        self.ext = 'auto'
-    def main(self, inputs, output):
-        """Inference demo for Real-ESRGAN.
-        It mainly for restoring anime videos.
+def main():
+    """Inference demo for Real-ESRGAN.
+    It mainly for restoring anime videos.
 
-        """
-        self.input = inputs
-        self.output = output
-        os.makedirs(self.output, exist_ok=True)
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', type=str, default="inputs/wav2lip_out/output.mp4", help='Input video, image or folder')
+    parser.add_argument(
+        '-n',
+        '--model_name',
+        type=str,
+        default='realesr-animevideov3',
+        help=('Model names: realesr-animevideov3 | RealESRGAN_x4plus_anime_6B | RealESRGAN_x4plus | RealESRNet_x4plus |'
+              ' RealESRGAN_x2plus | realesr-general-x4v3'
+              'Default:realesr-animevideov3'))
+    parser.add_argument('-o', '--output', type=str, default="result", help='Output folder')
+    parser.add_argument(
+        '-dn',
+        '--denoise_strength',
+        type=float,
+        default=0.5,
+        help=('Denoise strength. 0 for weak denoise (keep noise), 1 for strong denoise ability. '
+              'Only used for the realesr-general-x4v3 model'))
+    parser.add_argument('-s', '--outscale', type=float, default=4, help='The final upsampling scale of the image')
+    parser.add_argument('--suffix', type=str, default='out', help='Suffix of the restored video')
+    parser.add_argument('-t', '--tile', type=int, default=0, help='Tile size, 0 for no tile during testing')
+    parser.add_argument('--tile_pad', type=int, default=10, help='Tile padding')
+    parser.add_argument('--pre_pad', type=int, default=0, help='Pre padding size at each border')
+    parser.add_argument('--face_enhance', action='store_true', help='Use GFPGAN to enhance face')
+    parser.add_argument(
+        '--fp32', action='store_true', help='Use fp32 precision during inference. Default: fp16 (half precision).')
+    parser.add_argument('--fps', type=float, default=None, help='FPS of the output video')
+    parser.add_argument('--ffmpeg_bin', type=str, default='ffmpeg', help='The path to ffmpeg')
+    parser.add_argument('--extract_frame_first', action='store_true')
+    parser.add_argument('--num_process_per_gpu', type=int, default=1)
 
-        if mimetypes.guess_type(self.input)[0] is not None and mimetypes.guess_type(self.input)[0].startswith('video'):
-            is_video = True
-        else:
-            is_video = False
+    parser.add_argument(
+        '--alpha_upsampler',
+        type=str,
+        default='realesrgan',
+        help='The upsampler for the alpha channels. Options: realesrgan | bicubic')
+    parser.add_argument(
+        '--ext',
+        type=str,
+        default='auto',
+        help='Image extension. Options: auto | jpg | png, auto means using the same extension as inputs')
+    args = parser.parse_args()
 
-        if is_video and self.input.endswith('.flv'):
-            mp4_path = self.input.replace('.flv', '.mp4')
-            os.system(f'ffmpeg -i {self.input} -codec copy {mp4_path}')
-            self.input = mp4_path
+    args.input = args.input.rstrip('/').rstrip('\\')
+    os.makedirs(args.output, exist_ok=True)
 
-        if self.extract_frame_first and not is_video:
-            self.extract_frame_first = False
+    if mimetypes.guess_type(args.input)[0] is not None and mimetypes.guess_type(args.input)[0].startswith('video'):
+        is_video = True
+    else:
+        is_video = False
 
-        
-        run(self)
+    if is_video and args.input.endswith('.flv'):
+        mp4_path = args.input.replace('.flv', '.mp4')
+        os.system(f'ffmpeg -i {args.input} -codec copy {mp4_path}')
+        args.input = mp4_path
 
-        if self.extract_frame_first:
-            tmp_frames_folder = osp.join(self.output, f'{self.video_name}_inp_tmp_frames')
-            shutil.rmtree(tmp_frames_folder)
+    if args.extract_frame_first and not is_video:
+        args.extract_frame_first = False
+
+    run(args)
+
+    if args.extract_frame_first:
+        tmp_frames_folder = osp.join(args.output, f'{args.video_name}_inp_tmp_frames')
+        shutil.rmtree(tmp_frames_folder)
 
 
-    if __name__ == '__main__':
-        p = Process(target=main, args=())
-        p.start()
-        p.join()
+if __name__ == '__main__':
+    #     info('main line')
+    p = Process(target=main, args=('bob',))
+    p.start()
+    p.join()
