@@ -324,7 +324,7 @@ def run(args):
     os.remove(f'{args.output}/{args.video_name}_vidlist.txt')
 
 
-def main():
+def main_upscale():
     """Inference demo for Real-ESRGAN.
     It mainly for restoring anime videos.
 
@@ -347,7 +347,7 @@ def main():
         default=0.5,
         help=('Denoise strength. 0 for weak denoise (keep noise), 1 for strong denoise ability. '
               'Only used for the realesr-general-x4v3 model'))
-    parser.add_argument('-s', '--outscale', type=float, default=4, help='The final upsampling scale of the image')
+    parser.add_argument('-s', '--outscale', type=float, default=2, help='The final upsampling scale of the image')
     parser.add_argument('--suffix', type=str, default='out', help='Suffix of the restored video')
     parser.add_argument('-t', '--tile', type=int, default=0, help='Tile size, 0 for no tile during testing')
     parser.add_argument('--tile_pad', type=int, default=10, help='Tile padding')
@@ -393,10 +393,3 @@ def main():
     if args.extract_frame_first:
         tmp_frames_folder = osp.join(args.output, f'{args.video_name}_inp_tmp_frames')
         shutil.rmtree(tmp_frames_folder)
-
-
-if __name__ == '__main__':
-    #     info('main line')
-    p = Process(target=main, args=('bob',))
-    p.start()
-    p.join()
