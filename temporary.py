@@ -314,7 +314,7 @@ def run(args):
 
     cmd = [
         args.ffmpeg_bin, '-f', 'concat', '-safe', '0', '-i', f'{args.output}/{args.video_name}_vidlist.txt', '-c',
-        'copy', f'{video_save_path}'
+        'copy', f'{video_save_path}', '-y'
     ]
     print(' '.join(cmd))
     subprocess.call(cmd)
@@ -335,7 +335,7 @@ def main_upscale():
         '-n',
         '--model_name',
         type=str,
-        default='realesr-animevideov3',
+        default='realesr-general-x4v3',
         help=('Model names: realesr-animevideov3 | RealESRGAN_x4plus_anime_6B | RealESRGAN_x4plus | RealESRNet_x4plus |'
               ' RealESRGAN_x2plus | realesr-general-x4v3'
               'Default:realesr-animevideov3'))
@@ -347,7 +347,7 @@ def main_upscale():
         default=0.5,
         help=('Denoise strength. 0 for weak denoise (keep noise), 1 for strong denoise ability. '
               'Only used for the realesr-general-x4v3 model'))
-    parser.add_argument('-s', '--outscale', type=float, default=2, help='The final upsampling scale of the image')
+    parser.add_argument('-s', '--outscale', type=float, default=1, help='The final upsampling scale of the image')
     parser.add_argument('--suffix', type=str, default='out', help='Suffix of the restored video')
     parser.add_argument('-t', '--tile', type=int, default=0, help='Tile size, 0 for no tile during testing')
     parser.add_argument('--tile_pad', type=int, default=10, help='Tile padding')
@@ -358,7 +358,7 @@ def main_upscale():
     parser.add_argument('--fps', type=float, default=None, help='FPS of the output video')
     parser.add_argument('--ffmpeg_bin', type=str, default='ffmpeg', help='The path to ffmpeg')
     parser.add_argument('--extract_frame_first', action='store_true')
-    parser.add_argument('--num_process_per_gpu', type=int, default=1)
+    parser.add_argument('--num_process_per_gpu', type=int, default=12)
 
     parser.add_argument(
         '--alpha_upsampler',
