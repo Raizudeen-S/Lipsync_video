@@ -1,5 +1,6 @@
 import gradio as gr
 import setup1
+import json
 from multiprocessing import Process
 from temporary import main_upscale
 from tts import male_voice, female_voice
@@ -10,7 +11,7 @@ import edge_tts
  
 male_images = ["inputs/faces/thumbnils/men1.png", "inputs/faces/thumbnils/men2.png", "inputs/faces/thumbnils/men3.png"]
 female_images = ["inputs/faces/thumbnils/women1.png", "inputs/faces/thumbnils/women2.png", "inputs/faces/thumbnils/women3.png"]
- 
+
 outfile = "result"
 wav2lip_video = "inputs/wav2lip_out/output.mp4"
 audio_file_path = "inputs/input_audio/ai.wav"
@@ -41,33 +42,33 @@ def preview_video_process(video_input, selected_image, video_gen_location):
     preview_output = "temp/preview.mp4"
  
     if video_gen_location == "Bottom Right":
-        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-        [0:v][scaled]overlay=W-w--100:H-h" -c:a copy -t 10 {} -y""".format(
+        command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [first][scaled]overlay=W-w--100:H-h" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
     elif video_gen_location == "Bottom Left":
-        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-        [0:v][scaled]overlay=-100:H-h" -c:a copy -t 10 {} -y""".format(
+        command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [first][scaled]overlay=-100:H-h" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
     elif video_gen_location == "Top Right":
-        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-        [0:v][scaled]overlay=W-w--100:0" -c:a copy -t 10 {} -y""".format(
+        command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [first][scaled]overlay=W-w--100:0" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
     elif video_gen_location == "Top Left":
-        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-        [0:v][scaled]overlay=-100:0" -c:a copy -t 10 {} -y""".format(
+        command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+        [first][scaled]overlay=-100:0" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
     elif video_gen_location == "Right":
-        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned];
-        [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W/2:H-h" -c:a copy -t 10 {} -y""".format(
+        command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned];
+        [cleaned]scale=iw/1.5:ih/1.5[scaled];  [first][scaled]overlay=W/2:H-h" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
     elif video_gen_location == "Left":
-        command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned];
-        [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=-W/5:H-h" -c:a copy -t 10 {} -y""".format(
+        command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned];
+        [cleaned]scale=iw/1.5:ih/1.5[scaled];  [first][scaled]overlay=-W/5:H-h" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
  
@@ -89,35 +90,35 @@ def create_interface():
             del lip_sync_obj
             # Enhance video using Real-ESRGAN
 
-            main()
+            main_upscale()
 
             if video_gen_location == "Bottom Right":
-                command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-                [0:v][scaled]overlay=W-w--100:H-h" -map 1:a -c:a copy {} -y""".format(
+                command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+                [first][scaled]overlay=W-w--100:H-h" -preset veryslow -map 1:a -c:a copy {} -y""".format(
                     video_input, enchance_video_ouput, final_output
                 )
             elif video_gen_location == "Bottom Left":
-                command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-                [0:v][scaled]overlay=-100:H-h" -map 1:a -c:a copy {} -y""".format(
+                command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+                [first][scaled]overlay=-100:H-h" -preset veryslow -map 1:a -c:a copy {} -y""".format(
                     video_input, enchance_video_ouput, final_output
                 )
             elif video_gen_location == "Top Right":
-                command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-                [0:v][scaled]overlay=W-w--100:0" -map 1:a -c:a copy {} -y""".format(
+                command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+                [first][scaled]overlay=W-w--100:0" -preset veryslow -map 1:a -c:a copy {} -y""".format(
                     video_input, enchance_video_ouput, final_output
                 )
             elif video_gen_location == "Top Left":
-                command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
-                [0:v][scaled]overlay=-100:0" -map 1:a -c:a copy {} -y""".format(
+                command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
+                [first][scaled]overlay=-100:0" -preset veryslow -map 1:a -c:a copy {} -y""".format(
                     video_input, enchance_video_ouput, final_output
                 )
             elif video_gen_location == "Right":
-                command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned]; [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=W-w/1.4:H-h" -map 1:a -c:a copy {} -y""".format(
+                command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/1.5:ih/1.5[scaled];  [first][scaled]overlay=W-w/1.4:H-h" -preset veryslow -map 1:a -c:a copy {} -y""".format(
                     video_input, enchance_video_ouput, final_output
                 )
             elif video_gen_location == "Left":
-                command = """ffmpeg -i {} -i {} -filter_complex "[1:v]colorkey=0x00FF00:0.3:0.1[cleaned];
-                [cleaned]scale=iw/1.5:ih/1.5[scaled];  [0:v][scaled]overlay=-W/5:H-h" -map 1:a -c:a copy {} -y""".format(
+                command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned];
+                [cleaned]scale=iw/1.5:ih/1.5[scaled];  [first][scaled]overlay=-W/5:H-h" -preset veryslow -map 1:a -c:a copy {} -y""".format(
                     video_input, enchance_video_ouput, final_output
                 )
             else:
