@@ -3,44 +3,62 @@ import setup1
 import json
 from multiprocessing import Process
 from temporary import main_upscale
-from tts import male_voice, female_voice
+# from tts import male_voice, female_voice
 import inference as lip
 import inference_upscale as realesrgan
 import subprocess, platform
 import edge_tts
- 
-male_images = ["inputs/faces/thumbnils/men1.png", "inputs/faces/thumbnils/men2.png", "inputs/faces/thumbnils/men3.png"]
-female_images = ["inputs/faces/thumbnils/women1.png", "inputs/faces/thumbnils/women2.png", "inputs/faces/thumbnils/women3.png"]
+from moviepy.editor import VideoFileClip
 
 outfile = "result"
 wav2lip_video = "inputs/wav2lip_out/output.mp4"
-audio_file_path = "inputs/input_audio/ai.wav"
+audio_file_path = "inputs/input_audio/audio.wav"
 enchance_video_ouput = "result/output_out.mp4"
 final_output = "result/final_result.mp4"
- 
+
+with open("inputs/voices.json", "r") as file:
+    data = json.load(file)
+    male_images = data["thumbnail"]["male_images"]
+    female_images = data["thumbnail"]["female_images"]
+    male_voice = data["voices"]["male_voice"]
+    female_voice = data["voices"]["female_voice"]
+
 enhance_video = realesrgan.RealEsrganUpscale()
- 
+
+
 def tts(input_text, voice):
     # Function to handle the TTS
     com = edge_tts.Communicate(input_text, voice)
     com.save_sync(audio_file_path)
     return audio_file_path
- 
- 
+
+def audio_output_from_video(video_input):
+    video_clip = VideoFileClip(video_input)
+    audio_clip = video_clip.audio
+
+    audio_clip.write_audiofile(audio_file_path)
+
+    # Close the video and audio clip objects to free resources
+    video_clip.close()
+    audio_clip.close()
+
+
 def update_previews(gender):
     if gender == "Male":
         return male_images, gr.update(choices=male_voice, visible=True)
     elif gender == "Female":
         return female_images, gr.update(choices=female_voice, visible=True)
- 
+
+
 def select_image(selection: gr.SelectData):
     # Function to handle the selected image
     return selection.value["image"]["orig_name"]
- 
+
+
 def preview_video_process(video_input, selected_image, video_gen_location):
     preview_video = "inputs/faces/" + selected_image.split(".")[0] + ".mp4"
     preview_output = "temp/preview.mp4"
- 
+
     if video_gen_location == "Bottom Right":
         command = """ffmpeg -i {} -i {} -filter_complex "[0:v]scale=1920:1080[first]; [1:v]scale=1920:1080[second]; [second]colorkey=0x00FF00:0.4:0.05[cleaned]; [cleaned]scale=iw/2.5:ih/2.5[scaled];
         [first][scaled]overlay=W-w--100:H-h" -c:a copy -t 10 {} -y""".format(
@@ -71,14 +89,15 @@ def preview_video_process(video_input, selected_image, video_gen_location):
         [cleaned]scale=iw/1.5:ih/1.5[scaled];  [first][scaled]overlay=-W/5:H-h" -c:a copy -t 10 {} -y""".format(
             video_input, preview_video, preview_output
         )
- 
+
     else:
         return 0
- 
+
     subprocess.call(command, shell=platform.system() != "Windows")
- 
+
     return preview_output
- 
+
+
 def create_interface():
     def process_video(video_input, audio_output, video_gen_location, selected_image):
         try:
@@ -136,7 +155,10 @@ def create_interface():
             # Left column: Inputs
             with gr.Column():
                 video_input = gr.Video()
+                audio_gen_button = gr.Radio(label="Audio Generation", choices=["From Video", "From Text"], interactive=True)
                 text_input = gr.Textbox(label="Input Text")
+
+                # audio_gen_button.change(fn=audio_output,inputs=audio_gen_button,outputs=audio_output)
 
                 with gr.Row():
                     gender_input = gr.Radio(choices=["Male", "Female"], label="Gender", interactive=True, value=None)
@@ -188,7 +210,7 @@ def create_interface():
                 )
 
     # Launch the interface
-    demo.launch(debug=True, server_name="0.0.0.0",server_port=5000)
+    demo.launch(debug=True, server_name="0.0.0.0", server_port=5000)
 
 
 if __name__ == "__main__":
