@@ -3,7 +3,6 @@ import setup1
 import json
 from multiprocessing import Process
 from temporary import main_upscale
-# from tts import male_voice, female_voice
 import inference as lip
 import inference_upscale as realesrgan
 import subprocess, platform
@@ -31,6 +30,13 @@ def tts(input_text, voice):
     com = edge_tts.Communicate(input_text, voice)
     com.save_sync(audio_file_path)
     return audio_file_path
+
+def audio_gen_function(audio_gen_button, video_input): 
+    if audio_gen_button == "From Video":
+        audio_output_from_video(video_input)
+        return gr.update(visible=False)
+    elif audio_gen_button == "From Text":
+        return gr.update(visible=True)
 
 def audio_output_from_video(video_input):
     video_clip = VideoFileClip(video_input)
@@ -106,7 +112,7 @@ def create_interface():
             lip_sync_obj = lip.Wav2LipCall(face=preview_video, audio="inputs/input_audio/ai.wav", outfile=outfile)
             lip_sync_obj.main()
 
-            del lip_sync_obj
+            del lip_sync_objhghhg
             # Enhance video using Real-ESRGAN
 
             main_upscale()
@@ -155,14 +161,14 @@ def create_interface():
             # Left column: Inputs
             with gr.Column():
                 video_input = gr.Video()
-                audio_gen_button = gr.Radio(label="Audio Generation", choices=["From Video", "From Text"], interactive=True)
                 text_input = gr.Textbox(label="Input Text")
-
-                # audio_gen_button.change(fn=audio_output,inputs=audio_gen_button,outputs=audio_output)
+                audio_gen_button = gr.Radio(label="Audio Generation", choices=["From Video", "From Text"], interactive=True)
 
                 with gr.Row():
                     gender_input = gr.Radio(choices=["Male", "Female"], label="Gender", interactive=True, value=None)
-                    voice_dropdown = gr.Dropdown(label="Voice", interactive=True)
+                    voice_dropdown = gr.Dropdown(label="Voice", interactive=True, visible=False)
+
+                    audio_gen_button.change(fn=audio_gen_function,inputs=[audio_gen_button, video_input],outputs=voice_dropdown)
                 # Set up dependency between gender and voice dropdown
                 with gr.Row():
                     image_gallery = gr.Gallery(

@@ -1,7 +1,7 @@
 {
   "thumbnail": {
     "male_images": ["inputs/faces/thumbnils/men1.png", "inputs/faces/thumbnils/men2.png", "inputs/faces/thumbnils/men3.png"],
-    "female_images": ["inputs/faces/thumbnils/women1.png", "inputs/faces/thumbnils/women2.png", "inputs/faces/thumbnils/women3.png"]
+    "female_images": ["inputs/faces/thumbnils/female1.png", "inputs/faces/thumbnils/female2.png", "inputs/faces/thumbnils/female3.png"]
   },
   "voices": {
     "male_voice": [
