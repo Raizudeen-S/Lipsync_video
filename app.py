@@ -216,8 +216,7 @@ def create_interface():
                 )
 
     # Launch the interface
-    demo.launch(debug=True, server_name="0.0.0.0", server_port=5000)
-
+    demo.launch(debug=True)
 
 if __name__ == "__main__":
     create_interface()

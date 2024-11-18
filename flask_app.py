@@ -54,10 +54,11 @@ def upload_file():
         file.save(os.path.join(app.config["UPLOAD_FOLDER"]))
         text = request.form.get("text")
         if not text:
-            return jsonify({"message": "Video Only"}), 200
+            session["text"] = "" 
+            return jsonify({"data": UPLOAD_FOLDER, "text": False}), 200
         session["text"] = text  # Store text in session
         session.modified = True
-        return jsonify({"message": "File and text successfully uploaded"}), 200
+        return jsonify({"data": UPLOAD_FOLDER, "text": text}), 200
 
 
 @app.route("/gender", methods=["POST"])
@@ -73,15 +74,15 @@ def choices():
         elif gender == "female":
             return jsonify({"voices": female_voice, "images": encode_images(female_images)}), 200
 
-        return jsonify({"message": "Choice successfully uploaded"}), 200
+        return jsonify({"Error": "Gender should be male or female"}), 400
     print(gender)
 
     if os.path.exists(UPLOAD_FOLDER):
         audio_output_from_video(UPLOAD_FOLDER,audio_file_path)
         if gender == "male":
-            return jsonify({"audio": encode_audio(audio_file_path), "images": encode_images(male_images)}), 200
+            return jsonify({"voices": None, "images": encode_images(male_images)}), 200
         elif gender == "female":
-            return jsonify({"audio": encode_audio(audio_file_path), "images": encode_images(female_images)}), 200
+            return jsonify({"voices": None, "images": encode_images(female_images)}), 200
         return jsonify({"audio": encode_audio(audio_file_path)}), 200
     return jsonify({"message": "Video file does not exist"}), 400
 
@@ -105,9 +106,9 @@ def select_avatar():
         tts_process.start()
         tts_process.join()
 
-        return jsonify({"message": "Avatar choice successfully uploaded","audio": encode_audio(audio_file_path)}), 200
+        return jsonify({"avatar": selected_image,"audio": encode_audio(audio_file_path)}), 200
     
-    return jsonify({"message": "Avatar choice successfully uploaded"}), 200
+    return jsonify({"avatar": selected_image,"audio": encode_audio(audio_file_path)}), 200
 
 
 @app.route("/preview", methods=["POST"])
